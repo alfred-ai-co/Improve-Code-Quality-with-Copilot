@@ -1,8 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException
 
+from app.core.limiter import limiter
+from app.api.errors.rate_limit_error import rate_limit_handler
 from app.api.errors.http_error import http_error_handler
 from app.api.errors.validation_error import http422_error_handler
 from app.api.routes.api import router as api_router
@@ -17,6 +19,7 @@ def get_application() -> FastAPI:
     
     application = FastAPI(**settings.fastapi_kwargs)
     application.state.settings = settings
+    application.state.limiter = limiter
     
     origins = ["http://localhost:3000"]
     
@@ -32,6 +35,7 @@ def get_application() -> FastAPI:
     application.add_event_handler("shutdown", create_stop_app_handler(application))
     application.add_exception_handler(HTTPException, http_error_handler)
     application.add_exception_handler(RequestValidationError, http422_error_handler)
+    application.add_exception_handler(HTTPException, rate_limit_handler)
     
     application.include_router(home_router)
     application.include_router(api_router, prefix=settings.api_prefix)
