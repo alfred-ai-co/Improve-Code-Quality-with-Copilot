@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.db_models.base import Project, Ticket
+from app.db_models.base import *
 
 
 # CRUD operations for Project
@@ -28,6 +28,7 @@ def delete_project(db: Session, project_id: int):
         db.delete(project)
         db.commit()
 
+
 # CRUD operations for Ticket
 def create_ticket(db: Session, project_id: int, title: str, description: str, status: str, priority: str):
     new_ticket = Ticket(project_id=project_id, title=title, description=description, status=status, priority=priority)
@@ -55,3 +56,38 @@ def delete_ticket(db: Session, ticket_id: int):
     if ticket:
         db.delete(ticket)
         db.commit()
+
+
+# CRUD Operations for Kanban Boards
+def create_board(db: Session, name: str, description: str):
+    new_board = KanbanBoard(name=name, description=description)
+    db.add(new_board)
+    db.commit()
+    db.refresh(new_board)
+    return new_board
+
+def get_board(db: Session, board_id: int):
+    return db.query(KanbanBoard).filter(KanbanBoard.id == board_id).first()
+
+def update_board(db: Session, board_id: int, name: str, description: str):
+    board = db.query(KanbanBoard).filter(KanbanBoard.id == board_id).first()
+    if board:
+        board.name = name
+        board.description = description
+        db.commit()
+        db.refresh(board)
+    return board
+
+def delete_board(db: Session, board_id: int):
+    board = db.query(KanbanBoard).filter(KanbanBoard.id == board_id).first()
+    if board:
+        db.delete(board)
+        db.commit()
+
+
+# CRUD Operations for Kanban Statuses
+
+
+# CRUD Operations for Kanban Tickets
+
+
