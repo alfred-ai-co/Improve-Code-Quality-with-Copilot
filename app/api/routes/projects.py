@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy.orm import Session
 from fastapi import Depends
 
-import app.db_models.crud as crud
+from app.db_models.crud import ProjectCRUD
 from app.api_models.projects import ProjectCreate, ProjectResponse
 from app.api.dependencies.sqldb import get_db
 
@@ -11,22 +11,37 @@ from app.api.dependencies.sqldb import get_db
 router = APIRouter()
 
 
-@router.post('', response_model=ProjectResponse)
-async def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
-    db_project = crud.create_project(db, project.name, project.description)
-    return db_project
+@router.post("/", status_code=201, response_model=ProjectResponse)
+def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
+    project_crud = ProjectCRUD(db)
+    return project_crud.create(**project.model_dump())
 
-@router.get('/{project_id}', response_model=ProjectResponse)
-async def read_project(project_id: int, db: Session = Depends(get_db)):
-    db_project = crud.get_project(db, project_id)
-    return db_project
 
-@router.put('/{project_id}', response_model=ProjectResponse)
-async def update_project(project_id: int, project: ProjectCreate, db: Session = Depends(get_db)):
-    db_project = crud.update_project(db, project_id, project.name, project.description)
-    return db_project
+@router.get("/", status_code=200, response_model=list[ProjectResponse])
+def get_all_projects(db: Session = Depends(get_db)):
+    project_crud = ProjectCRUD(db)
+    return project_crud.get_all()
 
-@router.delete('/{project_id}')
-async def delete_project(project_id: int, db: Session = Depends(get_db)):
-    crud.delete_project(db, project_id)
-    return {'message': f'Project with id {project_id} deleted'}
+
+@router.get("/{id}", status_code=200, response_model=ProjectResponse)
+def get_project(id: int, db: Session = Depends(get_db)):
+    project_crud = ProjectCRUD(db)
+    project = project_crud.get(id)
+    if not project:
+        raise HTTPException(status_code=404, detail=f"Project with id {id} not found")
+    return project
+
+
+@router.put("/{id}", status_code=200, response_model=ProjectResponse)
+def update_project(id: int, project: ProjectCreate, db: Session = Depends(get_db)):
+    project_crud = ProjectCRUD(db)
+    project_crud.update(id, **project.model_dump())
+    return project_crud.get(id)
+
+
+@router.delete("/{id}", status_code=204)
+def delete_project(id: int, db: Session = Depends(get_db)):
+    project_crud = ProjectCRUD(db)
+    project_crud.delete(id)
+    return {"message": "Project deleted successfully"}
+

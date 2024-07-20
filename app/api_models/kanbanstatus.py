@@ -3,20 +3,21 @@ from typing import Optional, List
 from datetime import datetime
 
 
-class KanbanBoardBase(BaseModel):
+class KanbanStatusBase(BaseModel):
     name: str
     description: Optional[str] = None
+    board_id: int
 
 
-class KanbanBoardCreate(KanbanBoardBase):
+class KanbanStatusCreate(KanbanStatusBase):
     pass
 
 
-class KanbanBoardUpdate(KanbanBoardBase):
+class KanbanStatusUpdate(KanbanStatusBase):
     pass
 
 
-class KanbanBoardInDB(KanbanBoardBase):
+class KanbanStatusInDB(KanbanStatusBase):
     id: int
     created_at: datetime
     
@@ -24,5 +25,5 @@ class KanbanBoardInDB(KanbanBoardBase):
         orm_mode = True
 
 
-class KanbanBoardResponse(KanbanBoardInDB):
+class KanbanStatusResponse(KanbanStatusInDB):
     pass

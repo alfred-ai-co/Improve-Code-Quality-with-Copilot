@@ -1,144 +1,138 @@
 from sqlalchemy.orm import Session
+from abc import ABC, abstractmethod
 from app.db_models.base import *
 
 
-# CRUD operations for Project
-def create_project(db: Session, name: str, description: str):
-    new_project = Project(name=name, description=description)
-    db.add(new_project)
-    db.commit()
-    db.refresh(new_project)
-    return new_project
+class CRUDInterface(ABC):
+    @abstractmethod
+    def create(self, **kwargs):
+        pass
 
-def get_project(db: Session, project_id: int):
-    return db.query(Project).filter(Project.id == project_id).first()
+    @abstractmethod
+    def get(self, id: int):
+        pass
 
-def update_project(db: Session, project_id: int, name: str, description: str):
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if project:
-        project.name = name
-        project.description = description
-        db.commit()
-        db.refresh(project)
-    return project
+    @abstractmethod
+    def get_all(self):
+        pass
 
-def delete_project(db: Session, project_id: int):
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if project:
-        db.delete(project)
-        db.commit()
+    @abstractmethod
+    def update(self, id: int, **kwargs):
+        pass
+
+    @abstractmethod
+    def delete(self, id: int):
+        pass
 
 
-# CRUD operations for Ticket
-def create_ticket(db: Session, project_id: int, title: str, description: str, status: str, priority: str):
-    new_ticket = Ticket(project_id=project_id, title=title, description=description, status=status, priority=priority)
-    db.add(new_ticket)
-    db.commit()
-    db.refresh(new_ticket)
-    return new_ticket
+class BaseCRUD(CRUDInterface):
+    """Base CRUD class for all models"""
+    def __init__(self, db: Session, model=None):
+        self.db = db
+        self.model = model
+    
+    def create(self, **kwargs):
+        item = self.model(**kwargs)
+        self.db.add(item)
+        self.db.commit()
+        self.db.refresh(item)
+        return item
 
-def get_ticket(db: Session, ticket_id: int):
-    return db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    def get(self, id: int):
+        return self.db.query(self.model).filter(self.model.id == id).first()
 
-def update_ticket(db: Session, ticket_id: int, title: str, description: str, status: str, priority: str):
-    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
-    if ticket:
-        ticket.title = title
-        ticket.description = description
-        ticket.status = status
-        ticket.priority = priority
-        db.commit()
-        db.refresh(ticket)
-    return ticket
+    def get_all(self):
+        return self.db.query(self.model).all()
 
-def delete_ticket(db: Session, ticket_id: int):
-    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
-    if ticket:
-        db.delete(ticket)
-        db.commit()
+    def update(self, id: int, **kwargs):
+        item = self.get(id)
+        for key, value in kwargs.items():
+            setattr(item, key, value)
+        self.db.commit()
+        self.db.refresh(item)
+        return item
 
-
-# CRUD Operations for Kanban Boards
-def create_board(db: Session, name: str, description: str):
-    new_board = KanbanBoard(name=name, description=description)
-    db.add(new_board)
-    db.commit()
-    db.refresh(new_board)
-    return new_board
-
-def get_board(db: Session, board_id: int):
-    return db.query(KanbanBoard).filter(KanbanBoard.id == board_id).first()
-
-def update_board(db: Session, board_id: int, name: str, description: str):
-    board = db.query(KanbanBoard).filter(KanbanBoard.id == board_id).first()
-    if board:
-        board.name = name
-        board.description = description
-        db.commit()
-        db.refresh(board)
-    return board
-
-def delete_board(db: Session, board_id: int):
-    board = db.query(KanbanBoard).filter(KanbanBoard.id == board_id).first()
-    if board:
-        db.delete(board)
-        db.commit()
+    def delete(self, id: int):
+        item = self.get(id)
+        self.db.delete(item)
+        self.db.commit()
 
 
-# CRUD Operations for Kanban Statuses
-def create_status(db: Session, name: str, description: str, board_id: int):
-    new_status = KanbanStatus(name=name, description=description, board_id=board_id)
-    db.add(new_status)
-    db.commit()
-    db.refresh(new_status)
-    return new_status
-
-def get_status(db: Session, status_id: int):
-    return db.query(KanbanStatus).filter(KanbanStatus.id == status_id).first()
-
-def update_status(db: Session, status_id: int, name: str, description: str, board_id: int):
-    status = db.query(KanbanStatus).filter(KanbanStatus.id == status_id).first()
-    if status:
-        status.name = name
-        status.description = description
-        status.board_id = board_id
-        db.commit()
-        db.refresh(status)
-    return status
-
-def delete_status(db: Session, status_id: int):
-    status = db.query(KanbanStatus).filter(KanbanStatus.id == status_id).first()
-    if status:
-        db.delete(status)
-        db.commit()
+class ProjectCRUD(BaseCRUD):
+    def __init__(self, db: Session):
+        super().__init__(db, Project)
+    
+    def create(self, name: str, description: str):
+        return super().create(name=name, description=description)
+    
+    def get(self, id: int):
+        return super().get(id)
+    
+    def get_all(self):
+        return super().get_all()
+    
+    def update(self, id: int, name: str, description: str):
+        return super().update(id, name=name, description=description)
+    
+    def delete(self, id: int):
+        return super().delete(id)
 
 
-# CRUD Operations for Kanban Tickets
-def create_ticket(db: Session, name: str, description: str, status: str, priority: str, board_id: int):
-    new_ticket = Ticket(name=name, description=description, status=status, priority=priority, board_id=board_id)
-    db.add(new_ticket)
-    db.commit()
-    db.refresh(new_ticket)
-    return new_ticket
+class TicketCRUD(BaseCRUD):
+    def __init__(self, db: Session):
+        super().__init__(db, Ticket)
+    
+    def create(self, project_id: int, title: str, description: str, status: str, priority: str):
+        return super().create(project_id=project_id, title=title, description=description, status=status, priority=priority)
+    
+    def get(self, id: int):
+        return super().get(id)
+    
+    def get_all(self):
+        return super().get_all()
+    
+    def update(self, id: int, project_id: int, title: str, description: str, status: str, priority: str):
+        return super().update(id, project_id=project_id, title=title, description=description, status=status, priority=priority)
+    
+    def delete(self, id: int):
+        return super().delete(id)
 
-def get_ticket(db: Session, ticket_id: int):
-    return db.query(Ticket).filter(Ticket.id == ticket_id).first()
 
-def update_ticket(db: Session, ticket_id: int, name: str, description: str, status: str, priority: str, board_id: int):
-    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
-    if ticket:
-        ticket.name = name
-        ticket.description = description
-        ticket.status = status
-        ticket.priority = priority
-        ticket.board_id = board_id
-        db.commit()
-        db.refresh(ticket)
-    return ticket
+class KanbanBoardCRUD(BaseCRUD):
+    def __init__(self, db: Session):
+        super().__init__(db, KanbanBoard)
+        
+    def create(self, name: str, description: str):
+        return super().create(name=name, description=description)
+    
+    def get(self, id: int):
+        return super().get(id)
+    
+    def get_all(self):
+        return super().get_all()
+    
+    def update(self, id: int, name: str, description: str) -> KanbanBoard:
+        return super().update(id, name=name, description=description)
+    
+    def delete(self, id: int) -> None:
+        return super().delete(id)
 
-def delete_ticket(db: Session, ticket_id: int):
-    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
-    if ticket:
-        db.delete(ticket)
-        db.commit()
 
+class KanbanStatusCRUD(BaseCRUD):
+    def __init__(self, db: Session):
+        super().__init__(db, KanbanStatus)
+    
+    def create(self, name: str, description: str, board_id: int):
+        return super().create(name=name, description=description, board_id=board_id)
+    
+    def get(self, id: int):
+        return super().get(id)
+    
+    def get_all(self):
+        return super().get_all()
+    
+    def update(self, id: int, name: str, description: str, board_id: int):
+        return super().update(id, name=name, description=description, board_id=board_id)
+    
+    def delete(self, id: int):
+        return super().delete(id)
